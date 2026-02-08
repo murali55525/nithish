@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: app-space
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          value: healthcare
+        - name: POSTGRES_USER
+          value: admin
+        - name: POSTGRES_PASSWORD
+          value: admin
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: init-db
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-db
+        configMap:
+          name: db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-service
+  namespace: app-space
+spec:
+  selector:
+    app: database
+  ports:
+  - port: 5432

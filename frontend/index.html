@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Healthcare Monitoring Platform</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+      --light: #f8fafc;
+      --gray: #64748b;
+      --dark-bg: #0f172a;
+      --dark-card: #1e293b;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #e2e8f0;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+    header {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    body.dark header { background: rgba(30,41,59,0.95); }
+
+    h1 { font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .card {
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+    body.dark .card { background: rgba(30,41,59,0.95); border-color: #334155; }
+
+    .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .tab-btn {
+      padding: 0.8rem 1.8rem;
+      border-radius: 12px;
+      background: #e2e8f0;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active { background: var(--primary); color: white; }
+    body.dark .tab-btn { background: #334155; color: #cbd5e1; }
+    body.dark .tab-btn.active { background: var(--primary); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .summary-card {
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08));
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+    body.dark .summary-card {
+      background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.12));
+      border-color: rgba(59,130,246,0.3);
+    }
+
+    table { width:100%; border-collapse: collapse; margin-top:1rem; }
+    th, td { padding: 1.1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    body.dark th, body.dark td { border-bottom-color: #334155; }
+    th { background: rgba(59,130,246,0.1); font-weight:700; color:var(--primary); }
+
+    .badge {
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      font-weight:600;
+      font-size:0.9rem;
+      color:white;
+    }
+    .badge.pending    { background:var(--warning); }
+    .badge.confirmed  { background:var(--success); }
+    .badge.completed  { background:#6b7280; }
+    .badge.cancelled  { background:var(--danger); }
+    .badge.Low        { background:var(--success); }
+    .badge.Medium     { background:var(--warning); }
+    .badge.High       { background:var(--danger); }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 2.5rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    body.dark .modal-content { background: var(--dark-card); color: #e2e8f0; }
+
+    button {
+      padding: 0.8rem 1.6rem;
+      border-radius: 12px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.primary  { background: var(--primary); color: white; }
+    button.success  { background: var(--success); color: white; }
+    button.danger   { background: var(--danger); color: white; }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--success);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      z-index: 2000;
+      transform: translateY(120px);
+      transition: transform 0.4s ease;
+    }
+    .toast.show { transform: translateY(0); }
+
+    .vitals-chart { height: 280px; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🏥 Healthcare Dashboard</h1>
+    <div style="display:flex; gap:1rem;">
+      <button id="themeToggle">🌙 Dark Mode</button>
+      <button id="logout" style="display:none;">Logout</button>
+    </div>
+  </header>
+
+  <div id="loginCard" class="card" style="max-width:420px; margin:0 auto; text-align:center;">
+    <h2 style="margin-bottom:1.5rem;">Welcome</h2>
+    <input type="text" id="username" placeholder="Username" style="width:100%; padding:1rem; margin:0.8rem 0; border-radius:12px; border:1px solid #cbd5e1;"/>
+    <input type="password" id="password" placeholder="Password" style="width:100%; padding:1rem; margin:0.8rem 0; border-radius:12px; border:1px solid #cbd5e1;"/>
+    <button class="primary" style="width:100%; padding:1rem;" onclick="tryLogin()">Sign In</button>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+    <div class="summary-grid">
+      <div class="summary-card"><h3>Total Patients</h3><div id="totalPatients" style="font-size:2.2rem; font-weight:800; color:var(--primary);">—</div></div>
+      <div class="summary-card"><h3>High Risk</h3><div id="highRisk" style="font-size:2.2rem; font-weight:800; color:var(--danger);">—</div></div>
+      <div class="summary-card"><h3>Today's Appointments</h3><div id="todayAppts" style="font-size:2.2rem; font-weight:800; color:var(--purple);">—</div></div>
+      <div class="summary-card"><h3>Upcoming</h3><div id="upcomingAppts" style="font-size:2.2rem; font-weight:800; color:var(--cyan);">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="patients">Patients</button>
+        <button class="tab-btn" data-tab="appointments">Appointments</button>
+      </div>
+
+      <div id="patientsTab">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <input type="text" id="searchPatients" placeholder="Search patients..." style="flex:1; min-width:240px; padding:0.9rem; border-radius:12px; border:1px solid #cbd5e1;"/>
+          <button class="success" onclick="openNewPatientModal()">+ New Patient</button>
+        </div>
+        <table id="patientsTable">
+          <thead><tr><th>Name</th><th>Age</th><th>Condition</th><th>Risk</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="appointmentsTab" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <input type="text" id="searchAppts" placeholder="Search appointments..." style="flex:1; min-width:240px; padding:0.9rem; border-radius:12px; border:1px solid #cbd5e1;"/>
+          <button class="success" onclick="openNewApptModal()">+ New Appointment</button>
+        </div>
+        <table id="appointmentsTable">
+          <thead><tr><th>Patient</th><th>Date / Time</th><th>Doctor</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:1.5rem; color:var(--gray); font-size:0.95rem;" id="lastUpdated">Last updated: —</div>
+      <div id="messageArea"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Patient Modals -->
+<div id="patientDetailModal" class="modal"></div>
+<div id="newPatientModal" class="modal">
+  <div class="modal-content">
+    <h2>Add New Patient</h2>
+    <form id="newPatientForm">
+      <div style="margin:1rem 0;"><label>Name</label><input type="text" id="newName" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Age</label><input type="number" id="newAge" min="1" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Condition</label><input type="text" id="newCondition" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Risk Level</label>
+        <select id="newRisk" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;">
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+      <button type="submit" class="primary" style="width:100%; margin-top:1rem;">Add Patient</button>
+    </form>
+  </div>
+</div>
+
+<div id="editPatientModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Patient</h2>
+    <form id="editPatientForm">
+      <input type="hidden" id="editPatientId">
+      <div style="margin:1rem 0;"><label>Name</label><input type="text" id="editName" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Age</label><input type="number" id="editAge" min="1" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Condition</label><input type="text" id="editCondition" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Risk Level</label>
+        <select id="editRisk" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;">
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+      <button type="submit" class="primary" style="width:100%; margin-top:1rem;">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<!-- Appointment Modals -->
+<div id="newApptModal" class="modal">
+  <div class="modal-content">
+    <h2>New Appointment</h2>
+    <form id="newApptForm">
+      <div style="margin:1rem 0;"><label>Patient</label>
+        <select id="newApptPatientId" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></select>
+      </div>
+      <div style="margin:1rem 0;"><label>Date & Time</label><input type="datetime-local" id="newApptDateTime" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Doctor</label><input type="text" id="newApptDoctor" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Status</label>
+        <select id="newApptStatus" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;">
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+        </select>
+      </div>
+      <button type="submit" class="primary" style="width:100%; margin-top:1rem;">Create Appointment</button>
+    </form>
+  </div>
+</div>
+
+<div id="editApptModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Appointment</h2>
+    <form id="editApptForm">
+      <input type="hidden" id="editApptId">
+      <div style="margin:1rem 0;"><label>Patient</label><select id="editApptPatientId" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></select></div>
+      <div style="margin:1rem 0;"><label>Date & Time</label><input type="datetime-local" id="editApptDateTime" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Doctor</label><input type="text" id="editApptDoctor" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+      <div style="margin:1rem 0;"><label>Status</label>
+        <select id="editApptStatus" required style="width:100%; padding:0.8rem; margin-top:0.4rem; border-radius:8px; border:1px solid #cbd5e1;">
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <button type="submit" class="primary" style="width:100%; margin-top:1rem;">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Configuration
+const API = "http://127.0.0.1:63227";
+let patients = [];
+let appointments = [];
+let vitalsInterval = null;
+
+// Elements
+const els = {
+  loginCard: document.getElementById("loginCard"),
+  mainContent: document.getElementById("mainContent"),
+  logoutBtn: document.getElementById("logout"),
+  themeToggle: document.getElementById("themeToggle"),
+  lastUpdated: document.getElementById("lastUpdated"),
+  totalPatients: document.getElementById("totalPatients"),
+  highRisk: document.getElementById("highRisk"),
+  todayAppts: document.getElementById("todayAppts"),
+  upcomingAppts: document.getElementById("upcomingAppts"),
+  patientsTab: document.getElementById("patientsTab"),
+  appointmentsTab: document.getElementById("appointmentsTab"),
+};
+
+// Toast
+function showToast(msg, type = "success") {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.style.background = type === "success" ? "var(--success)" : "var(--danger)";
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 3200);
+}
+
+// Login (demo)
+function tryLogin() {
+  const u = document.getElementById("username").value.trim();
+  const p = document.getElementById("password").value.trim();
+  if (u && p) {  // accept any non-empty for demo
+    localStorage.setItem("hc_logged_in", "true");
+    els.loginCard.style.display = "none";
+    els.mainContent.style.display = "block";
+    els.logoutBtn.style.display = "inline-block";
+    initApp();
+  } else {
+    alert("Please enter username and password");
+  }
+}
+
+// Theme
+function toggleTheme() {
+  document.body.classList.toggle("dark");
+  els.themeToggle.textContent = document.body.classList.contains("dark") ? "☀️ Light Mode" : "🌙 Dark Mode";
+  localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+}
+
+// API helper
+async function api(method, path, body = null) {
+  try {
+    const res = await fetch(API + path, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : null
+    });
+    if (!res.ok) throw new Error(await res.text() || res.status);
+    return await res.json();
+  } catch (err) {
+    showToast("Error: " + err.message, "error");
+    throw err;
+  }
+}
+
+// Load all data
+async function loadData() {
+  try {
+    const [p, a] = await Promise.all([
+      api("GET", "/patients"),
+      api("GET", "/appointments")
+    ]);
+    patients = p;
+    appointments = a;
+    renderAll();
+  } catch {}
+}
+
+function renderAll() {
+  renderPatients();
+  renderAppointments();
+  renderSummary();
+  els.lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+}
+
+function renderSummary() {
+  const total = patients.length;
+  const high = patients.filter(p => p.risk === "High").length;
+
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const todayCount = appointments.filter(ap => ap.date_time.startsWith(todayStr)).length;
+
+  const upcomingCount = appointments.filter(ap => {
+    const d = new Date(ap.date_time);
+    return d > now && !["Completed","Cancelled"].includes(ap.status);
+  }).length;
+
+  els.totalPatients.textContent = total;
+  els.highRisk.textContent = high;
+  els.todayAppts.textContent = todayCount;
+  els.upcomingAppts.textContent = upcomingCount;
+}
+
+// ── Patients ─────────────────────────────────────────────
+
+function renderPatients(filter = "") {
+  const tbody = document.querySelector("#patientsTable tbody");
+  tbody.innerHTML = "";
+  const filtered = patients.filter(p =>
+    p.name.toLowerCase().includes(filter.toLowerCase()) ||
+    p.condition.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  filtered.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="cursor:pointer; color:var(--primary);" onclick="showPatientDetail(${p.id})">${p.name}</td>
+      <td>${p.age}</td>
+      <td>${p.condition}</td>
+      <td><span class="badge ${p.risk.toLowerCase()}">${p.risk}</span></td>
+      <td>
+        <button onclick="openEditPatient(${p.id})">Edit</button>
+        <button class="danger" onclick="deletePatient(${p.id})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deletePatient(id) {
+  if (!confirm("Delete patient?")) return;
+  await api("DELETE", `/patients/${id}`);
+  showToast("Patient deleted");
+  loadData();
+}
+
+function openNewPatientModal() {
+  document.getElementById("newPatientForm").reset();
+  document.getElementById("newPatientModal").style.display = "flex";
+}
+
+document.getElementById("newPatientForm").onsubmit = async e => {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById("newName").value.trim(),
+    age: parseInt(document.getElementById("newAge").value),
+    condition: document.getElementById("newCondition").value.trim(),
+    risk: document.getElementById("newRisk").value
+  };
+  await api("POST", "/patients", data);
+  showToast("Patient added");
+  document.getElementById("newPatientModal").style.display = "none";
+  loadData();
+};
+
+function openEditPatient(id) {
+  const p = patients.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById("editPatientId").value = p.id;
+  document.getElementById("editName").value = p.name;
+  document.getElementById("editAge").value = p.age;
+  document.getElementById("editCondition").value = p.condition;
+  document.getElementById("editRisk").value = p.risk;
+  document.getElementById("editPatientModal").style.display = "flex";
+}
+
+document.getElementById("editPatientForm").onsubmit = async e => {
+  e.preventDefault();
+  const id = document.getElementById("editPatientId").value;
+  const data = {
+    name: document.getElementById("editName").value.trim(),
+    age: parseInt(document.getElementById("editAge").value),
+    condition: document.getElementById("editCondition").value.trim(),
+    risk: document.getElementById("editRisk").value
+  };
+  await api("PUT", `/patients/${id}`, data);
+  showToast("Patient updated");
+  document.getElementById("editPatientModal").style.display = "none";
+  loadData();
+};
+
+async function showPatientDetail(id) {
+  const p = patients.find(x => x.id === id);
+  if (!p) return;
+
+  const modal = document.getElementById("patientDetailModal");
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h2>${p.name}</h2>
+      <p>Age: ${p.age} • Condition: ${p.condition} • Risk: <span class="badge ${p.risk.toLowerCase()}">${p.risk}</span></p>
+      <canvas id="vitalsChartCanvas" class="vitals-chart"></canvas>
+      <button style="margin-top:1rem;" onclick="document.getElementById('patientDetailModal').style.display='none'">Close</button>
+    </div>
+  `;
+  modal.style.display = "flex";
+
+  const ctx = document.getElementById("vitalsChartCanvas").getContext("2d");
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: Array(12).fill(0).map((_,i) => `${i*5}s ago`),
+      datasets: [
+        { label: "Heart Rate (bpm)", data: Array(12).fill(0).map(() => 65 + Math.random()*35), borderColor: "#ef4444", tension: 0.4 },
+        { label: "SpO₂ (%)", data: Array(12).fill(0).map(() => 94 + Math.random()*6), borderColor: "#3b82f6", tension: 0.4 }
+      ]
+    },
+    options: { responsive: true, animation: false }
+  });
+
+  // Simulate live vitals
+  vitalsInterval = setInterval(() => {
+    if (modal.style.display !== "flex") {
+      clearInterval(vitalsInterval);
+      return;
+    }
+    chart.data.datasets.forEach(ds => {
+      ds.data.shift();
+      ds.data.push(ds.label.includes("Heart") ? 65 + Math.random()*35 : 94 + Math.random()*6);
+    });
+    chart.update("none");
+  }, 4000);
+}
+
+// ── Appointments ─────────────────────────────────────────
+
+function renderAppointments(filter = "") {
+  const tbody = document.querySelector("#appointmentsTable tbody");
+  tbody.innerHTML = "";
+  const filtered = appointments.filter(ap =>
+    (ap.patient_name||'').toLowerCase().includes(filter.toLowerCase()) ||
+    (ap.doctor||'').toLowerCase().includes(filter.toLowerCase())
+  );
+
+  filtered.forEach(ap => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${ap.patient_name || '—'}</td>
+      <td>${new Date(ap.date_time).toLocaleString([], {dateStyle:"medium", timeStyle:"short"})}</td>
+      <td>${ap.doctor}</td>
+      <td><span class="badge ${ap.status.toLowerCase()}">${ap.status}</span></td>
+      <td>
+        <button onclick="openEditAppt(${ap.id})">Edit</button>
+        <button class="danger" onclick="cancelAppt(${ap.id})">Cancel</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function cancelAppt(id) {
+  if (!confirm("Cancel appointment?")) return;
+  await api("PUT", `/appointments/${id}`, { status: "Cancelled" });
+  showToast("Appointment cancelled");
+  loadData();
+}
+
+function openNewApptModal() {
+  const select = document.getElementById("newApptPatientId");
+  select.innerHTML = '<option value="">Select patient</option>';
+  patients.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+
+  document.getElementById("newApptForm").reset();
+  document.getElementById("newApptModal").style.display = "flex";
+}
+
+document.getElementById("newApptForm").onsubmit = async e => {
+  e.preventDefault();
+  const patientId = document.getElementById("newApptPatientId").value;
+  const patient = patients.find(p => p.id == patientId);
+  if (!patient) return alert("Select a patient");
+
+  const data = {
+    patient_id: parseInt(patientId),
+    patient_name: patient.name,
+    date_time: document.getElementById("newApptDateTime").value,
+    doctor: document.getElementById("newApptDoctor").value.trim(),
+    status: document.getElementById("newApptStatus").value
+  };
+  await api("POST", "/appointments", data);
+  showToast("Appointment created");
+  document.getElementById("newApptModal").style.display = "none";
+  loadData();
+};
+
+function openEditAppt(id) {
+  const ap = appointments.find(x => x.id === id);
+  if (!ap) return;
+
+  const select = document.getElementById("editApptPatientId");
+  select.innerHTML = '<option value="">Select patient</option>';
+  patients.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.name;
+    if (p.id == ap.patient_id) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  document.getElementById("editApptId").value = ap.id;
+  document.getElementById("editApptDateTime").value = ap.date_time.slice(0,16);
+  document.getElementById("editApptDoctor").value = ap.doctor;
+  document.getElementById("editApptStatus").value = ap.status;
+  document.getElementById("editApptModal").style.display = "flex";
+}
+
+document.getElementById("editApptForm").onsubmit = async e => {
+  e.preventDefault();
+  const id = document.getElementById("editApptId").value;
+  const patientId = document.getElementById("editApptPatientId").value;
+  const patient = patients.find(p => p.id == patientId);
+
+  const data = {
+    patient_id: parseInt(patientId),
+    patient_name: patient ? patient.name : "",
+    date_time: document.getElementById("editApptDateTime").value,
+    doctor: document.getElementById("editApptDoctor").value.trim(),
+    status: document.getElementById("editApptStatus").value
+  };
+  await api("PUT", `/appointments/${id}`, data);
+  showToast("Appointment updated");
+  document.getElementById("editApptModal").style.display = "none";
+  loadData();
+};
+
+// Tab switching
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    els.patientsTab.style.display = btn.dataset.tab === "patients" ? "" : "none";
+    els.appointmentsTab.style.display = btn.dataset.tab === "appointments" ? "" : "none";
+  };
+});
+
+// Search
+document.getElementById("searchPatients").oninput = e => renderPatients(e.target.value);
+document.getElementById("searchAppts").oninput = e => renderAppointments(e.target.value);
+
+// Init
+if (localStorage.getItem("hc_logged_in") === "true") {
+  els.loginCard.style.display = "none";
+  els.mainContent.style.display = "block";
+  els.logoutBtn.style.display = "inline-block";
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark");
+    els.themeToggle.textContent = "☀️ Light Mode";
+  }
+  initApp();
+}
+
+async function initApp() {
+  await loadData();
+  setInterval(loadData, 18000); // ~every 18 seconds
+}
+
+els.themeToggle.onclick = toggleTheme;
+els.logoutBtn.onclick = () => {
+  localStorage.clear();
+  location.reload();
+};
+
+window.onclick = e => {
+  if (e.target.classList.contains("modal")) {
+    e.target.style.display = "none";
+    if (vitalsInterval) clearInterval(vitalsInterval);
+  }
+};
+</script>
+</body>
+</html>

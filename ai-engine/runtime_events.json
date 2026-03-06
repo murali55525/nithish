@@ -1,0 +1,6 @@
+{
+  "observed_flows": [
+    { "from": "frontend", "to": "backend" },
+    { "from": "frontend", "to": "database" }
+  ]
+}

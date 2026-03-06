@@ -1,0 +1,19 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdenyallowallnetworkpolicy   # ✅ must be lowercase of Kind
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDenyAllowAllNetworkPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sdenyallowallnetworkpolicy
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "NetworkPolicy"
+          not input.review.object.spec.ingress
+          msg := "NetworkPolicy with allow-all ingress is not allowed"
+        }
